@@ -58,7 +58,8 @@ Boolean conditions are evaluated directly:
 
 In this example, the test will only be re-run if the operating system is Windows.
 
-A callable condition receives the exception that caused the test phase to fail.
+A callable condition that accepts one argument receives the exception that
+caused a failed test phase. Existing zero-argument callables remain supported.
 This allows a re-run decision to use exception attributes rather than only its
 type or message:
 
@@ -75,9 +76,10 @@ type or message:
    def test_service_request():
        raise TemporaryError(429)
 
-A string condition can inspect the same exception through the ``error`` name.
-Its evaluation context also contains ``os``, ``sys``, ``platform``, ``config``
-(the pytest config object), and the test function's globals:
+A string condition can inspect the same exception through the reserved
+``error`` name. Its evaluation context also contains ``os``, ``sys``,
+``platform``, ``config`` (the pytest config object), and the test function's
+globals:
 
 .. code-block:: python
 
@@ -85,8 +87,10 @@ Its evaluation context also contains ``os``, ``sys``, ``platform``, ``config``
    def test_service_request():
        raise TemporaryError(429)
 
-If a callable condition raises an exception, pytest emits a warning and does
-not re-run the test.
+When more than one test phase fails in an attempt, the test is re-run if the
+condition matches any of those failures. Each failure is evaluated at most
+once. If a callable or string condition raises an exception, pytest emits a
+warning and does not re-run for that failure.
 
 
 ``only_rerun``
