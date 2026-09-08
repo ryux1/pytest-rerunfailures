@@ -42,8 +42,10 @@ This will retry the test 5 times with a 2-second pause between attempts.
 ``condition``
 ^^^^^^^^^^^^^
 
-Re-run the test only if a specified condition is met.
-The condition can be any expression that evaluates to ``True`` or ``False``.
+Re-run the test only if a specified condition is met. The condition can be a
+boolean, a string to be evaluated, or a callable.
+
+Boolean conditions are evaluated directly:
 
 .. code-block:: python
 
@@ -55,6 +57,36 @@ The condition can be any expression that evaluates to ``True`` or ``False``.
        assert random.choice([True, False])
 
 In this example, the test will only be re-run if the operating system is Windows.
+
+A callable condition receives the exception that caused the test phase to fail.
+This allows a re-run decision to use exception attributes rather than only its
+type or message:
+
+.. code-block:: python
+
+   class TemporaryError(Exception):
+       def __init__(self, status):
+           self.status = status
+
+   @pytest.mark.flaky(
+       reruns=3,
+       condition=lambda error: error.status in {429, 503},
+   )
+   def test_service_request():
+       raise TemporaryError(429)
+
+A string condition can inspect the same exception through the ``error`` name.
+Its evaluation context also contains ``os``, ``sys``, ``platform``, ``config``
+(the pytest config object), and the test function's globals:
+
+.. code-block:: python
+
+   @pytest.mark.flaky(reruns=3, condition="error.status in {429, 503}")
+   def test_service_request():
+       raise TemporaryError(429)
+
+If a callable condition raises an exception, pytest emits a warning and does
+not re-run the test.
 
 
 ``only_rerun``
